@@ -769,11 +769,12 @@
         self.scrollView.maximumZoomScale =3;
         self.scrollView.minimumZoomScale= 1;
         self.scrollView.userInteractionEnabled = YES;
+        self.scrollView.showsHorizontalScrollIndicator = NO;
+        self.scrollView.showsVerticalScrollIndicator = NO;
         [self.view addSubview:self.scrollView];
         
         
         self.imageView = [UIImageView.alloc initWithFrame:self.view.bounds];
-        self.imageView.autoresizingMask = UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth |UIViewAutoresizingFlexibleTopMargin|UIViewAutoresizingFlexibleRightMargin|UIViewAutoresizingFlexibleLeftMargin|UIViewAutoresizingFlexibleBottomMargin;
         self.imageView.contentMode = UIViewContentModeScaleAspectFit;
         self.imageView.clipsToBounds = YES;
         self.imageView.tag = 506;
@@ -856,7 +857,7 @@
             [self.moviePlayerToolBarTop addSubview:self.rightSliderLabel];
             
             self.scrollView.maximumZoomScale = 1;
-            self.scrollView.minimumZoomScale =1;
+            self.scrollView.minimumZoomScale = 1;
         }
         
         self.imageView.userInteractionEnabled = YES;
@@ -1474,8 +1475,6 @@
     self.scrollView.contentOffset = offset;
 }
 
-
-
 - (CGPoint)maximumContentOffset{
     CGSize contentSize = self.scrollView.contentSize;
     CGSize boundsSize = self.scrollView.bounds.size;
@@ -1487,48 +1486,80 @@
 }
 
 -(void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation
-                                        duration:(NSTimeInterval)duration{
-    if (self.moviePlayerToolBarTop) {
-        self.moviePlayerToolBarTop.frame = CGRectMake(0, self.navigationController.navigationBar.bounds.size.height+([UIApplication sharedApplication].statusBarHidden?0:20), self.view.frame.size.width,44);
-        self.leftSliderLabel.frame = CGRectMake(8, 0, 40, 43);
-        self.rightSliderLabel.frame = CGRectMake(self.view.frame.size.width-20, 0, 50, 43);
+                                        duration:(NSTimeInterval)duration {
+    if (!self.imageView.image) {
+        return;
     }
-    self.playButton.frame = CGRectMake(self.viewController.view.frame.size.width/2-36, self.viewController.view.frame.size.height/2-36, 72, 72);
-    self.scrollView.contentSize = CGSizeMake(self.view.bounds.size.width*self.scrollView.zoomScale, self.view.bounds.size.height*self.scrollView.zoomScale);
-    self.imageView.frame = CGRectMake(0,0 , self.scrollView.contentSize.width,self.scrollView.contentSize.height);
-
-}
-
--(void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation{
-    [self prepareToResize];
-    [self recoverFromResizing];
+    
+    CGFloat ratio = self.imageView.image.size.width / self.imageView.image.size.height;
+    CGRect imageBounds;
+    
+    if (self.view.bounds.size.height * ratio <= self.view.bounds.size.width) {
+        //resized by height
+        imageBounds = CGRectMake(0, 0, self.view.bounds.size.height * ratio, self.view.bounds.size.height);
+    }
+    else {
+        //resized by width
+        imageBounds = CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.width / ratio);
+    }
+    
+    //calculating new scale
+    CGFloat newScale = 1.;
+    if (self.scrollView.zoomScale > 1.1) { //some nice scale tolerance
+        
+        //image after transformations shoild be the same size as before transformation
+        newScale = self.imageView.frame.size.width / imageBounds.size.width;
+        newScale = newScale > self.scrollView.minimumZoomScale ? newScale : self.scrollView.minimumZoomScale;
+        newScale = newScale < self.scrollView.maximumZoomScale ? newScale: self.scrollView.maximumZoomScale;
+    }
+    
+    //transforming image and scrollview
+    self.scrollView.zoomScale = 1.;
+    self.scrollView.contentSize = CGSizeMake(self.view.bounds.size.width, self.view.bounds.size.height);
+    self.imageView.bounds = imageBounds;
+    
+    //restoring image scale
+    self.scrollView.zoomScale = newScale;
+    
+    //aligning image
     [self centerImageView];
 }
 
--(void)centerImageView{
-    if(self.imageView.image){
-        CGRect frame  = AVMakeRectWithAspectRatioInsideRect(self.imageView.image.size,CGRectMake(0, 0, self.scrollView.contentSize.width, self.scrollView.contentSize.height));
-        
-        if (self.scrollView.contentSize.width==0 && self.scrollView.contentSize.height==0) {
-            frame = AVMakeRectWithAspectRatioInsideRect(self.imageView.image.size,self.scrollView.bounds);
-        }
-        
-        CGSize boundsSize = self.scrollView.bounds.size;
-        
-        CGRect frameToCenter = CGRectMake(0,0 , frame.size.width, frame.size.height);
-        
-        if (frameToCenter.size.width < boundsSize.width){
-            frameToCenter.origin.x = (boundsSize.width - frameToCenter.size.width) / 2;
-        }else{
-            frameToCenter.origin.x = 0;
-        }if (frameToCenter.size.height < boundsSize.height){
-            frameToCenter.origin.y = (boundsSize.height - frameToCenter.size.height) / 2;
-        }else{
-            frameToCenter.origin.y = 0;
-        }
-        self.imageView.frame = frameToCenter;
-    }
+-(void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation{
+    [self centerImageView];
 }
+
+-(void)centerImageView {
+    if (!self.imageView.image) {
+        return;
+    }
+    
+    CGRect bounds = AVMakeRectWithAspectRatioInsideRect(self.imageView.image.size, self.imageView.frame);
+    bounds.origin = CGPointMake(0, 0);
+    
+    CGFloat width, height;
+    
+    if (bounds.size.height < self.view.frame.size.height) {
+        height = self.view.bounds.size.height;
+    }
+    else {
+        height = bounds.size.height;
+    }
+    
+    if (bounds.size.width < self.view.bounds.size.width) {
+        width = self.view.bounds.size.width;
+    }
+    else {
+        width = bounds.size.width;
+    }
+    
+    self.scrollView.contentSize = CGSizeMake(width, height);
+    self.imageView.frame = CGRectMake((self.scrollView.contentSize.width - bounds.size.width) / 2,
+                                      (self.scrollView.contentSize.height - bounds.size.height) / 2,
+                                      bounds.size.width,
+                                      bounds.size.height);
+}
+
 -(void)scrollViewDidZoom:(UIScrollView *)scrollView{
     [self centerImageView];
 }

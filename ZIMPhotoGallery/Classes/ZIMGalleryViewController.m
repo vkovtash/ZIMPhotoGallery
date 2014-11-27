@@ -147,10 +147,7 @@ static CGFloat kToolbarAnimationDuration = 0.7;
     return ([touch.view isKindOfClass:UIControl.class] == NO);
 }
 
--(void) willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration {
-    self.pageViewController.view.frame = self.view.bounds;
-    [self.pageViewController.view.subviews.firstObject setFrame:CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height)];
-    
+-(void) willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration {    
     [UIView animateWithDuration:duration animations:^{
         [self updateToolbarLayoutForOrientation:toInterfaceOrientation];
     }];
