@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "7915DCCC2F876D0870436FD5"
+               BlueprintIdentifier = "70D6CDE8D4EA739FD8AB5DAF"
                BuildableName = "libPods-MHVideoPhotoGallery.a"
                BlueprintName = "Pods-MHVideoPhotoGallery"
                ReferencedContainer = "container:Pods.xcodeproj">
